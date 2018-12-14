@@ -7,7 +7,7 @@ class SubstanceList {
         let items = [];
         let that = this;
         let gettingSubstances = new XMLHttpRequest();
-        gettingSubstances.open('GET', './substances.json', true);
+        gettingSubstances.open('GET', './ingredients.php?function=get', true);
         gettingSubstances.onreadystatechange = function () {
             if (gettingSubstances.readyState !== 4) {
                 return;
@@ -18,15 +18,15 @@ class SubstanceList {
             }
             let substancesArray = JSON.parse(gettingSubstances.responseText);
             for (let i = 0; i < substancesArray.length; i++) {
-                items.push(new Substance(substancesArray[i].name, substancesArray[i].property));
+                items.push(new Substance(substancesArray[i].id, substancesArray[i].name, substancesArray[i].property));
             }
-            jsonIsLoaded();
+            requestIsDone();
         };
         gettingSubstances.send();
-
-        function jsonIsLoaded() {
+        function requestIsDone() {
             that.content = items;
             that.renderList();
+            that.buttonListeners();
         }
     }
     renderList() {
@@ -129,6 +129,41 @@ class SubstanceList {
     removeFromFlask(substance) {
         this.content.push(substance);
     }
+    buttonListeners() {
+        let buttonSave = document.querySelector('.btn__save');
+        buttonSave.addEventListener('click', send);
+        function send() {
+            let namefield = document.querySelector('.mixture-name');
+            let ingArr = [];
+            let volArr=[];
+            console.log(flask.content.length);
+            for (let i = 0; i<flask.content.length; i++) {
+                
+                ingArr.push(flask.content[i]['id']);
+                volArr.push(flask.content[i]['volume']);
+            }
+            let data = {
+                'name': namefield.value || 'Без названия',
+                'ingredients': ingArr,
+                'volumes': volArr
+            };
+            let postMixture = new XMLHttpRequest();
+            postMixture.open('POST', './save.php', true);
+            postMixture.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            postMixture.onreadystatechange = function () {
+                if (postMixture.readyState !== 4) {
+                    return;
+                }
+                if (postMixture.status !== 200) {
+                    console.log('Не удалось отправить!');
+                    return;
+                }
+                location.reload();
+            };
+            postMixture.send(JSON.stringify(data));
+    
+        }
+    }
 }
 
 //Класс сосуда
@@ -196,7 +231,7 @@ class Flask {
     }
     result() {
         let resultWrapper = document.querySelector('.mixture-result');
-        let dlAnchorElem = document.querySelector('.btn__save');
+        let saveWrapper = document.querySelector('.save-wrapper');
         if (this.summary > 0) {
 
             console.log('result');
@@ -208,16 +243,12 @@ class Flask {
             }
             resultWrapper.innerHTML = finalResult;
             console.log(JSON.stringify(flask));
-
-            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(flask));
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "mixture.json");
-
+            saveWrapper.style.display = "block";
         } else {
+             let namefield = document.querySelector('.mixture-name');
+            namefield.value = '';
             resultWrapper.innerHTML = '';
-            console.log(JSON.stringify(flask));
-            dlAnchorElem.removeAttribute("href");
-            dlAnchorElem.removeAttribute("download");
+            saveWrapper.style.display = "none";
 
         }
     }
@@ -226,7 +257,8 @@ class Flask {
 
 //Класс субстанции
 class Substance {
-    constructor(name, property, volume = 100, soa = 'liquid') {
+    constructor(id, name, property, volume = 100, soa = 'liquid') {
+        this.id = id;
         this.name = name;
         this.property = property;
         this.volume = volume;
