@@ -1,54 +1,64 @@
+let loaded = false;
+let flask;
 //Класс каталога
-class SubstanceList {
+class Workplace {
     constructor(items) {
         this.content = items;
     }
+    generateFlask () {
+        flask = new Flask('Основной сосуд', 'unlimited');
+    }
     loadList() {
+        this.generateFlask();
         let items = [];
         let that = this;
-        let gettingSubstances = new XMLHttpRequest();
-        gettingSubstances.open('GET', './ingredients.php?function=get', true);
-        gettingSubstances.onreadystatechange = function () {
-            if (gettingSubstances.readyState !== 4) {
+        let gettingIngredients = new XMLHttpRequest();
+        gettingIngredients.open('GET', './ingredients.php?function=get', true);
+        gettingIngredients.onreadystatechange = function () {
+            if (gettingIngredients.readyState !== 4) {
                 return;
             }
-            if (gettingSubstances.status !== 200) {
+            if (gettingIngredients.status !== 200) {
                 console.log('Не удалось получить список субстанций!');
                 return;
             }
-            let substancesArray = JSON.parse(gettingSubstances.responseText);
-            for (let i = 0; i < substancesArray.length; i++) {
-                items.push(new Substance(substancesArray[i].id, substancesArray[i].name, substancesArray[i].property));
+            let IngredientsArray = JSON.parse(gettingIngredients.responseText);
+            for (let i = 0; i < IngredientsArray.length; i++) {
+                items.push(new Ingredient(IngredientsArray[i].id, IngredientsArray[i].name, IngredientsArray[i].property));
             }
             requestIsDone();
         };
-        gettingSubstances.send();
+        gettingIngredients.send();
         function requestIsDone() {
             that.content = items;
             that.renderList();
-            that.buttonListeners();
         }
     }
     renderList() {
-        let wrapper = document.querySelector(".substance-list-wrapper");
+        let wrapper = document.querySelector(".ingredient-list-wrapper");
         wrapper.innerHTML = '';
         let renderResult = '';
         for (let i = 0; i < this.content.length; i++) {
-            if (this.content[i] instanceof Substance) {
+            if (this.content[i] instanceof Ingredient) {
                 renderResult += this.content[i].render(true);
             }
         }
         wrapper.innerHTML += renderResult;
         let that = this;
-        let cards = document.querySelectorAll('.substance-item');
-        let target = document.querySelector('.mixture-zone');
+        let cards = document.querySelectorAll('.ingredient-item');
         let buttonsAdd = document.querySelectorAll('.btn__add');
-        let volumes = document.querySelectorAll('.substance-volume');
+        let volumes = document.querySelectorAll('.ingredient-volume');
         let volumeRE = /^[1-9][0-9]*/;
-        target.addEventListener('dragover', dragOver);
-        target.addEventListener('dragenter', dragEnter);
-        target.addEventListener('dragleave', dragLeave);
-        target.addEventListener('drop', dragDrop);
+        if (!loaded) {
+            let target = document.querySelector('.mixture-zone');
+            target.addEventListener('dragover', dragOver);
+            target.addEventListener('dragenter', dragEnter);
+            target.addEventListener('dragleave', dragLeave);
+            target.addEventListener('drop', dragDrop);
+            loaded = true;
+            let buttonSave = document.querySelector('.btn__save');
+            buttonSave.addEventListener('click', saveMixture);
+        }
         for (let i = 0; i < buttonsAdd.length; i++) {
             cards[i].addEventListener('dblclick', function () {
                 if (volumes[i].value.match(volumeRE)) {
@@ -82,7 +92,7 @@ class SubstanceList {
         }
 
         function dragEnd() {
-            this.className = 'substance-item';
+            this.className = 'ingredient-item';
 
         }
 
@@ -102,7 +112,7 @@ class SubstanceList {
 
         function dragDrop() {
             this.className = 'mixture-zone';
-            let volumes = document.querySelectorAll('.substance-volume');
+            let volumes = document.querySelectorAll('.ingredient-volume');
             let volumeRE = /^[1-9][0-9]*/;
             let cardsDraggable = document.querySelectorAll('[draggable="true"]');
             for (let i = 0; i < cardsDraggable.length; i++) {
@@ -113,32 +123,18 @@ class SubstanceList {
                         that.addToFlask(i);
                         return true;
                     } else {
+                        alert("Объем в миллилитрах задан неверно!");
                         return false;
                     }
                 }
-
             }
-
         }
-    }
-    addToFlask(index) {
-        flask.addSubstance(this.content[index])
-        this.content.splice(index, 1);
-        this.renderList();
-    }
-    removeFromFlask(substance) {
-        this.content.push(substance);
-    }
-    buttonListeners() {
-        let buttonSave = document.querySelector('.btn__save');
-        buttonSave.addEventListener('click', send);
-        function send() {
+        function saveMixture() {
             let namefield = document.querySelector('.mixture-name');
             let ingArr = [];
-            let volArr=[];
+            let volArr = [];
             console.log(flask.content.length);
-            for (let i = 0; i<flask.content.length; i++) {
-                
+            for (let i = 0; i < flask.content.length; i++) {
                 ingArr.push(flask.content[i]['id']);
                 volArr.push(flask.content[i]['volume']);
             }
@@ -161,8 +157,15 @@ class SubstanceList {
                 location.reload();
             };
             postMixture.send(JSON.stringify(data));
-    
         }
+    }
+    addToFlask(index) {
+        flask.addIngredient(this.content[index])
+        this.content.splice(index, 1);
+        this.renderList();
+    }
+    removeFromFlask(ingredient) {
+        this.content.push(ingredient);
     }
 }
 
@@ -174,12 +177,12 @@ class Flask {
         this.content = [];
         this.summary = 0;
     }
-    addSubstance(sub) {
+    addIngredient(sub) {
         this.content.push(sub);
         this.renderFlask();
         this.calculate();
     }
-    removeSubstance(sub) {
+    removeIngredient(sub) {
         catalog.removeFromFlask(this.content[sub]);
         this.content.splice(sub, 1);
         this.renderFlask();
@@ -191,7 +194,7 @@ class Flask {
         wrapper.innerHTML = '';
         let renderResult = '';
         for (let i = 0; i < this.content.length; i++) {
-            if (this.content[i] instanceof Substance) {
+            if (this.content[i] instanceof Ingredient) {
                 renderResult += this.content[i].render(false);
             }
         }
@@ -200,7 +203,7 @@ class Flask {
         let buttonsChange = document.querySelectorAll('.btn__changeVolume');
         for (let i = 0; i < buttonsChange.length; i++) {
             buttonsChange[i].addEventListener('click', function () {
-                let volumes = document.querySelectorAll('.substance-volume__inFlask');
+                let volumes = document.querySelectorAll('.ingredient-volume__inFlask');
                 let volumeRE = /^[1-9][0-9]*/;
                 if (volumes[i].value.match(volumeRE)) {
                     console.log(volumes[i].value);
@@ -216,7 +219,7 @@ class Flask {
         let buttonsRemove = document.querySelectorAll('.btn__remove');
         for (let p = 0; p < buttonsRemove.length; p++) {
             buttonsRemove[p].addEventListener('click', function () {
-                that.removeSubstance(p);
+                that.removeIngredient(p);
             }, false);
         }
     }
@@ -245,18 +248,16 @@ class Flask {
             console.log(JSON.stringify(flask));
             saveWrapper.style.display = "block";
         } else {
-             let namefield = document.querySelector('.mixture-name');
+            let namefield = document.querySelector('.mixture-name');
             namefield.value = '';
             resultWrapper.innerHTML = '';
             saveWrapper.style.display = "none";
-
         }
     }
-
 }
 
 //Класс субстанции
-class Substance {
+class Ingredient {
     constructor(id, name, property, volume = 100, soa = 'liquid') {
         this.id = id;
         this.name = name;
@@ -267,16 +268,15 @@ class Substance {
     render(bool) {
         if (bool) {
             let renderResult = '';
-            renderResult = '<div class="substance-item" draggable="true"><p class="substance substance-name">' + this.name + '</p><p class="substance substance-property">' + this.property + '</p><input class="substance substance-volume" type="number" min="1" step="1" placeholder="Объем, мл." value="' + this.volume + '"><button class="btn__add">Добавить</button></div>';
+            renderResult = '<div class="ingredient-item" draggable="true"><p class="ingredient ingredient-name">' + this.name + '</p><p class="ingredient ingredient-property">' + this.property + '</p><input class="ingredient ingredient-volume" type="number" min="1" step="1" placeholder="Объем, мл." value="' + this.volume + '"><button class="btn__add">Добавить</button></div>';
             return renderResult;
         } else {
             let renderResult = '';
-            renderResult = '<div class="substance-item" draggable="false"><p class="substance substance-name">' + this.name + '</p><p class="substance substance-property">' + this.property + '</p><input class="substance substance-volume__inFlask" type="number" min="1" step="1" placeholder="Объем, мл." value="' + this.volume + '"><button class="btn__changeVolume">Изменить объем</button><button class="btn__remove">Удалить</button></div>';
+            renderResult = '<div class="ingredient-item" draggable="false"><p class="ingredient ingredient-name">' + this.name + '</p><p class="ingredient ingredient-property">' + this.property + '</p><input class="ingredient ingredient-volume__inFlask" type="number" min="1" step="1" placeholder="Объем, мл." value="' + this.volume + '"><button class="btn__changeVolume">Изменить объем</button><button class="btn__remove">Удалить</button></div>';
             return renderResult;
         }
     }
 }
 
-let catalog = new SubstanceList();
-let flask = new Flask('Основной сосуд', 'unlimited');
-catalog.loadList();
+let workplace = new Workplace();
+workplace.loadList();
