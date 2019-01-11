@@ -8,10 +8,10 @@ class Workplace {
     generateFlask () {
         flask = new Flask('Основной сосуд', 'unlimited');
     }
-    loadList() {
+    loadList = () => {
         this.generateFlask();
         let items = [];
-        let that = this;
+ 
         let gettingIngredients = new XMLHttpRequest();
         gettingIngredients.open('GET', './ingredients.php?function=get', true);
         gettingIngredients.onreadystatechange = function () {
@@ -30,11 +30,11 @@ class Workplace {
         };
         gettingIngredients.send();
         function requestIsDone() {
-            that.content = items;
-            that.renderList();
+            this.content = items;
+            this.renderList();
         }
     }
-    renderList() {
+    renderList = () => {
         let wrapper = document.querySelector(".ingredient-list-wrapper");
         wrapper.innerHTML = '';
         let renderResult = '';
@@ -44,7 +44,6 @@ class Workplace {
             }
         }
         wrapper.innerHTML += renderResult;
-        let that = this;
         let cards = document.querySelectorAll('.ingredient-item');
         let buttonsAdd = document.querySelectorAll('.btn__add');
         let volumes = document.querySelectorAll('.ingredient-volume');
@@ -63,8 +62,8 @@ class Workplace {
             cards[i].addEventListener('dblclick', function () {
                 if (volumes[i].value.match(volumeRE)) {
                     console.log(volumes[i].value);
-                    that.content[i]['volume'] = volumes[i].value;
-                    that.addToFlask(i);
+                    this.content[i]['volume'] = volumes[i].value;
+                    this.addToFlask(i);
                     return true;
                 } else {
                     alert("Объем в миллилитрах задан неверно!");
@@ -76,8 +75,8 @@ class Workplace {
             buttonsAdd[i].addEventListener('click', function () {
                 if (volumes[i].value.match(volumeRE)) {
                     console.log(volumes[i].value);
-                    that.content[i]['volume'] = volumes[i].value;
-                    that.addToFlask(i);
+                    this.content[i]['volume'] = volumes[i].value;
+                    this.addToFlask(i);
                     return true;
                 } else {
                     alert("Объем в миллилитрах задан неверно!");
@@ -119,8 +118,8 @@ class Workplace {
                 if (cardsDraggable[i].matches('.invisible')) {
                     console.log(i);
                     if (volumes[i].value.match(volumeRE)) {
-                        that.content[i]['volume'] = volumes[i].value;
-                        that.addToFlask(i);
+                        this.content[i]['volume'] = volumes[i].value;
+                        this.addToFlask(i);
                         return true;
                     } else {
                         alert("Объем в миллилитрах задан неверно!");
@@ -189,7 +188,7 @@ class Flask {
         this.calculate();
         catalog.renderList();
     }
-    renderFlask() {
+    renderFlask = () => {
         let wrapper = document.querySelector(".mixture-zone");
         wrapper.innerHTML = '';
         let renderResult = '';
@@ -199,7 +198,6 @@ class Flask {
             }
         }
         wrapper.innerHTML += renderResult;
-        let that = this;
         let buttonsChange = document.querySelectorAll('.btn__changeVolume');
         for (let i = 0; i < buttonsChange.length; i++) {
             buttonsChange[i].addEventListener('click', function () {
@@ -207,8 +205,8 @@ class Flask {
                 let volumeRE = /^[1-9][0-9]*/;
                 if (volumes[i].value.match(volumeRE)) {
                     console.log(volumes[i].value);
-                    that.content[i]['volume'] = volumes[i].value;
-                    that.calculate();
+                    this.content[i]['volume'] = volumes[i].value;
+                    this.calculate();
                     return true;
                 } else {
                     alert("Объем в миллилитрах задан неверно!");
@@ -219,18 +217,18 @@ class Flask {
         let buttonsRemove = document.querySelectorAll('.btn__remove');
         for (let p = 0; p < buttonsRemove.length; p++) {
             buttonsRemove[p].addEventListener('click', function () {
-                that.removeIngredient(p);
+                this.removeIngredient(p);
             }, false);
         }
     }
-    calculate() {
-        let that = this;
+    calculate = () => {
+
         let summary = 0;
         for (let i = 0; i < this.content.length; i++) {
             summary += parseFloat(this.content[i]['volume']);
         }
         this.summary = summary;
-        that.result();
+        this.result();
     }
     result() {
         let resultWrapper = document.querySelector('.mixture-result');
